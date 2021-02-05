@@ -36,9 +36,14 @@ class cardBoardCard {
 
 		this.x = x;
 		this.y = y;
-		this.width = 200;
-		this.height = 100;
-		this.pentagonPosition = {'x' : 0, 'y' : 0}
+		this.width = title.length*20 < 200 ? 200 : title.length*20;
+		this.height = Object.keys(values).length*24 < 75 ? 75 : Object.keys(values).length*24+85;
+		this.pentagonPosition = {'x' : 0, 'y' : 0};
+
+		Object.keys(values).forEach((key) => {
+			if (`- ${key}: ${values[key]}`.length*12 > this.width)
+				this.width = `- ${key}: ${values[key]}`.length*12;
+		})
 
 		this.image = new Image;
 		this.image.addEventListener('load', e => {
@@ -50,12 +55,14 @@ class cardBoardCard {
 
 	connect(obj) {
 		obj.x = this.x+((this.width+100)*Object.keys(this.connected_entities).length);
-		obj.y = this.y+180;
+		obj.y = this.y+this.height+120;
+		console.log(this.title,'setting child',obj.title,'x to:', obj.x)
 		this.connected_entities[Object.keys(this.connected_entities).length] = obj;
 	}
 
 	render(parent) {
 		if (this.parent) {
+			console.log('Rendering:', this.title)
 			this.context = parent.context;
 
 			if (!this.parent.x)
@@ -75,10 +82,7 @@ class cardBoardCard {
 			
 			this.drawShadow();
 			Object.keys(this.connected_entities).forEach((key) => {
-				let src_closest_point = closestSideFromSrcToTarget(this, this.connected_entities[key]);
-				let dst_closest_point = closestSideFromSrcToTarget(this.connected_entities[key], src_closest_point);
-
-				this.drawArrowTo(src_closest_point.x, src_closest_point.y, dst_closest_point.x, dst_closest_point.y)
+				this.drawArrowTo(this.connected_entities[key]); //src_closest_point.x, src_closest_point.y, dst_closest_point.x, dst_closest_point.y)
 				this.connected_entities[key].parent = parent;
 				this.connected_entities[key].context = this.context;
 				this.connected_entities[key].render(parent);
@@ -102,32 +106,45 @@ class cardBoardCard {
 			this.context.drawImage(this.image, 0, 0, 24, 24, this.pentagonPosition.x-8, this.pentagonPosition.y-8, 24, 24);
 	}
 
-	drawArrowTo(fromx, fromy, tox, toy) {
+	drawArrowTo(target) {
+		let src = closestSideFromSrcToTarget(this, target);
+		let dst = closestSideFromSrcToTarget(target, src);
+
 		let headlen = 10; // length of head in pixels
-		let dx = tox - fromx;
-		let dy = toy - fromy;
+		let dx = dst.x - src.x;
+		let dy = dst.y - src.y;
 		let angle = Math.atan2(dy, dx);
 		let padding = 40;
 		this.context.beginPath();
 		this.context.strokeStyle = "#4283F2";
 		this.context.lineWidth = 3;
 
-		this.context.moveTo(fromx, fromy);
-		if (fromx != tox) {
-			let halfway_x = (fromx+tox)/2;
+
+		this.context.moveTo(src.x, src.y);
+		if(dst.y > target.y) {
+			let halfway_x = (src.x+dst.x)/2;
 
 			if (halfway_x < this.parent.x+this.parent.width)
 				halfway_x = this.parent.x+this.parent.width+padding;
 
-			this.context.lineTo(halfway_x, fromy);
-			this.context.lineTo(halfway_x, toy);
-			angle = Math.atan2(toy - fromy, tox + (fromx+tox)/2);
+			this.context.lineTo(halfway_x, src.y);
+			this.context.lineTo(halfway_x, dst.y);
 		}
-		this.context.lineTo(tox, toy);
+		/*if (src.x != dst.x) {
+			let halfway_x = (src.x+dst.x)/2;
 
-		this.context.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
-		this.context.moveTo(tox, toy);
-		this.context.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+			if (halfway_x < this.parent.x+this.parent.width)
+				halfway_x = this.parent.x+this.parent.width+padding;
+
+			this.context.lineTo(halfway_x, src.y);
+			this.context.lineTo(halfway_x, dst.y);
+			angle = Math.atan2(dst.y - src.y, dst.x + (src.x+dst.x)/2);
+		}*/
+		this.context.lineTo(dst.x, dst.y);
+
+		this.context.lineTo(dst.x - headlen * Math.cos(angle - Math.PI / 6), dst.y - headlen * Math.sin(angle - Math.PI / 6));
+		this.context.moveTo(dst.x, dst.y);
+		this.context.lineTo(dst.x - headlen * Math.cos(angle + Math.PI / 6), dst.y - headlen * Math.sin(angle + Math.PI / 6));
 
 		this.context.stroke();
 	}
@@ -135,7 +152,7 @@ class cardBoardCard {
 	drawValues() {
 		let start_y = this.y+82;
 		Object.keys(this.values).forEach((key) => {
-			this.context.font = "12px Arial";
+			this.context.font = "12px monospace";
 			this.context.fillStyle = "#666666";
 			this.context.fillText(`- ${key}: ${this.values[key]}`, this.x+75, start_y);
 			start_y += 24;
@@ -143,13 +160,13 @@ class cardBoardCard {
 	}
 
 	drawTitle() {
-		this.context.font = "20px Arial";
+		this.context.font = "20px monospace";
 		this.context.fillStyle = "#666666";
 		this.context.fillText(this.title, this.x+75, this.y+35);
 	}
 
 	drawDescription() {
-		this.context.font = "12px Arial";
+		this.context.font = "12px monospace";
 		this.context.fillStyle = "#666666";
 		this.context.fillText(this.description, this.x+76, this.y+50);
 	}
@@ -222,25 +239,50 @@ class cardBoardCard {
 
 class CPU extends cardBoardCard {
 	constructor(values, x, y) {
-		super("CPU", "A cpu info", "./cardboard/resources/images/GoogleIcons/Compute-Engine.svg", x, y, values);
+		super("CPU", "A cpu info", "./js-cardboard/cardboard/resources/images/GoogleIcons/Compute-Engine.svg", x, y, values);
 	}
 }
 
 class PCIBus extends cardBoardCard {
 	constructor(values, x, y) {
-		super("PCIe Bus", "A PCIe Root Bus", "./cardboard/resources/images/GoogleIcons/Container-Engine.svg", x, y, values);
+		super("PCIe Bus", "A PCIe Root Bus", "./js-cardboard/cardboard/resources/images/GoogleIcons/Container-Engine.svg", x, y, values);
 	}
 }
 
 class PCIPort extends cardBoardCard {
 	constructor(values, x, y) {
-		super("PCIe Port", "A PCIe Root Port", "./cardboard/resources/images/GoogleIcons/cloud-logging-512-color.svg", x, y, values);
+		super("PCIe Port", "A PCIe Root Port", "./js-cardboard/cardboard/resources/images/GoogleIcons/cloud-logging-512-color.svg", x, y, values);
 	}
 }
 
 class PCIDevice extends cardBoardCard {
 	constructor(description, values, x, y) {
-		super("PCIe Device", description, "./cardboard/resources/images/GoogleIcons/cloud-logging-512-color.svg", x, y, values);
+		super("PCIe Device", description, "./js-cardboard/cardboard/resources/images/GoogleIcons/cloud-logging-512-color.svg", x, y, values);
+	}
+}
+
+class SCSIBus extends cardBoardCard {
+	constructor(values, x, y) {
+		super("SCSI Bus", "A SCSI Root Bus", "./js-cardboard/cardboard/resources/images/GoogleIcons/Container-Engine.svg", x, y, values);
+	}
+}
+
+class SCSIHDD extends cardBoardCard {
+	constructor(values, x, y) {
+		super("Harddrive", "A SCSI Harddrive", "./js-cardboard/cardboard/resources/images/GoogleIcons/Container-Engine.svg", x, y, values);
+	}
+}
+
+class SCSICDRom extends cardBoardCard {
+	constructor(values, x, y) {
+		super("CDRom", "A SCSI CD-Rom", "./js-cardboard/cardboard/resources/images/GoogleIcons/Container-Engine.svg", x, y, values);
+	}
+}
+
+
+class GenericCard extends cardBoardCard {
+	constructor(description, values, x, y) {
+		super("Unknown Type??", description, "./js-cardboard/cardboard/resources/images/GoogleIcons/cloud-logging-512-color.svg", x, y, values);
 	}
 }
 
