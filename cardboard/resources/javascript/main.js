@@ -1,5 +1,3 @@
-let goutDebugContext = null;
-
 Array.min = function( array ){
 	return Math.min.apply( Math, array );
 };
@@ -33,6 +31,7 @@ class cardBoardCard {
 		this.values = values;
 		this.context = null;
 		this.connected_entities = {};
+		this.sprites = {}
 		this.parent = null;
 
 		this.x = x;
@@ -80,6 +79,9 @@ class cardBoardCard {
 				let dst_closest_point = closestSideFromSrcToTarget(this.connected_entities[key], src_closest_point);
 
 				this.drawArrowTo(src_closest_point.x, src_closest_point.y, dst_closest_point.x, dst_closest_point.y)
+				this.connected_entities[key].parent = parent;
+				this.connected_entities[key].context = this.context;
+				this.connected_entities[key].render(parent);
 			})
 
 			this.drawBox();
@@ -105,6 +107,7 @@ class cardBoardCard {
 		let dx = tox - fromx;
 		let dy = toy - fromy;
 		let angle = Math.atan2(dy, dx);
+		let padding = 40;
 		this.context.beginPath();
 		this.context.strokeStyle = "#4283F2";
 		this.context.lineWidth = 3;
@@ -113,9 +116,8 @@ class cardBoardCard {
 		if (fromx != tox) {
 			let halfway_x = (fromx+tox)/2;
 
-			console.log(halfway_x, this.parent.width, this)
-			if (halfway_x < this.parent.width)
-				halfway_x = this.parent.width;
+			if (halfway_x < this.parent.x+this.parent.width)
+				halfway_x = this.parent.x+this.parent.width+padding;
 
 			this.context.lineTo(halfway_x, fromy);
 			this.context.lineTo(halfway_x, toy);
@@ -218,7 +220,7 @@ class cardBoardCard {
 	}
 }
 
-class gCPU extends cardBoardCard {
+class CPU extends cardBoardCard {
 	constructor(values, x, y) {
 		super("CPU", "A cpu info", "./cardboard/resources/images/GoogleIcons/Compute-Engine.svg", x, y, values);
 	}
@@ -291,9 +293,9 @@ class cardBoard {
 			Object.keys(this.sprites).forEach((key) => {
 				this.sprites[key].render(this);
 			})
-			this.context.beginPath();
-			this.context.rect(this.x, this.y, this.width, this.height);
-			this.context.stroke();
+		//	this.context.beginPath();
+		//	this.context.rect(this.x, this.y, this.width, this.height);
+		//	this.context.stroke();
 		}
 
 	}

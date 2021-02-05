@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>cardBoard</title>
+	<link rel="preload" href="./cardboard/resources/javascript/main.js" as="script">
+	<style type="text/css">
+		:root {
+			--grey: #BABABA;
+			--blue: #4283F2;
+			--gray-ish: #F6F6F6;
+		}
+
+		html, body {
+			position: absolute;
+			margin: 0px;
+			padding: 0px;
+			left: 0px;
+			top: 0px;
+			width: 100%;
+			height: 100%;
+			overflow: auto;
+			background-color: #F6F6F6;
+
+			display: flex;
+		}
+
+		.board {
+			background-color: #F6F6F6;
+			flex-grow: 1;
+		}
+	</style>
+	<script type="text/javascript" src="./cardboard/resources/javascript/main.js" defer></script>
+	<script type="text/javascript">
+		let mainBoard = null;
+		window.onload = () => {
+			mainBoard = new cardBoard('board');
+
+			let cpu = new CPU({'type' : 'host'}, 160, 100);
+			let pcibus1 = new PCIBus({'id' : 'pcie.0'})
+			let rootport1 = new PCIPort({'bus' : 'pcie.0'})
+
+			cpu.connect(pcibus1);
+
+			pcibus1.connect(rootport1);
+			pcibus1.connect(new PCIDevice("PCIe GPU Device", {'bus' : 'pcie.0'}));
+			pcibus1.connect(new PCIDevice("PCIe GPU Device", {'bus' : 'pcie.0'}));
+			rootport1.connect(new PCIDevice("PCIe Network Device", {'bus' : 'pcie.0'}));
+
+			mainBoard.add_card(cpu);
+
+			mainBoard.render();
+		}
+	</script>
+</head>
+<body>
+	<canvas class="board">
+		
+	</canvas>
+</body>
+</html>
